@@ -1,6 +1,27 @@
 #include <stdio.h>
 #include <limits.h>
 
+int gcm(int a,int b){
+
+	int c;
+
+	if(a==0||b==0){return -1;}
+
+	if(b>a){c=a;a=b;b=c;}
+
+	//b is littler
+	if(b>a){c=a;a=b;b=c;}
+
+	while( (c = a%b) != 0 ){
+		a=b;
+		b=c;
+	}
+
+	return b;
+
+}
+
+
 int main(void){
 	int m,n;	//m*n matrix
 	int i,j;	//count
@@ -13,28 +34,31 @@ int main(void){
 		printf("type width besides cofficient matrix\n");
 		scanf("%d",&anslengs);
 	}
-	printf("snalengs=%d\n",anslengs);
+	printf("anslengs=%d\n",anslengs);
 
 	//initialise matrix
-	float matrix[m][n];
-	for(i=0;i<m;i++){for(j=0;j<n;j++){matrix[i][j]=0.0;}}
+	int overmat[m][n];
+	int undermat[m][n];
+	for(i=0;i<m;i++){for(j=0;j<n;j++){overmat[i][j]=0;undermat[i][j]=1;}}
 
 	//input matrix
 	printf("type matrix\n");
-	for(i=0;i<m;i++){for(j=0;j<n;j++){scanf(" %f",&matrix[i][j]);}}
+	for(i=0;i<m;i++){for(j=0;j<n;j++){scanf(" %d",&overmat[i][j]);}}
 
 	//print matrix
 	printf("\n%d*%dmatrix\n",m,n);
-	for(i=0;i<m;i++){for(j=0;j<n;j++){printf("%8.4f ",matrix[i][j]);}printf("\n");}
+	for(i=0;i<m;i++){for(j=0;j<n;j++){printf("%4d ",overmat[i][j]);}printf("\n");}
 	printf("\n");
-    
+
 	//solve
 	//I cant use line changer
 	int pivoti=-1,pivotj=-1;	//pivot's i&j
-	float pivotval;	//pivot's value
-	float decval;	//pivot's declice value
-	int k,l;    
+	int pivotvalover,pivotvalunder;	//pivot's value
+	int decvalover,decvalunder;	//pivot's declice value
+	int k,l;
 	int a,b;
+	int gcmnum;	//gcm num swap
+	int overswap,underswap;	//calc for BUNSU
 
 
 	printf("solve start!\n******************************************\n");
@@ -42,57 +66,120 @@ int main(void){
 	//search pivot
 	for(j=0;j<n-anslengs;j++){
 		for(i=0;i<m;i++){
-			if(matrix[i][j]!=0.0 && i>pivoti && j>pivotj){
+			printf("hello\n");
+			if(overmat[i][j]!=0.0 && i>pivoti && j>pivotj){
 				//pivot=(i,j)
 			//pivottanise
 				pivoti=i;
 				pivotj=j;
-				pivotval=matrix[i][j];
-				if(pivotval!=1.0){
+				pivotvalover=overmat[i][j];
+				pivotvalunder=undermat[i][j];
+				if((pivotvalover/pivotvalunder)!=1.0){
 					//printf("pivot(i,j)=(%d,%d)\npivotval=%8.4f\n",i,j,pivotval);
-					printf("pivottanise\nline(%d)=line(%d)/%f",pivoti,pivoti,pivotval);
+					printf("pivottanise\nline(%d)=line(%d)*%d/%d\n",pivoti+1,pivoti+1,pivotvalunder,pivotvalover);
 					for(l=0;l<n;l++){
-						matrix[i][l] = matrix[i][l]/pivotval;
+						overmat[i][l] *= pivotvalunder;
+						undermat[i][l] *= pivotvalover;
+						if(overmat[i][l]==0){
+							undermat[i][l]=1;
+						}else{
+							gcmnum=gcm(overmat[i][l],undermat[i][l]);
+							overmat[i][l] /= gcmnum;
+							undermat[i][l] /= gcmnum;
+						}
+						if(overmat[i][l]==undermat[i][l]){
+							overmat[i][l]=1;
+							undermat[i][l]=1;
+						}
+						if(undermat[i][l]<0){
+							overmat[i][l]*= -1;
+							undermat[i][l] *= -1;
+						}
+
 					}
-			//print matrix
+				//print matrix
+					printf("\n");
+					for(a=0;a<m;a++){
+						for(b=0;b<n;b++){
+							printf(" %4d",overmat[a][b]);
+							if(undermat[a][b]!=1){
+								printf("/%4d",undermat[a][b]);
+							}else{
+								printf("     ");
+							}
+						}
+						printf("\n");
+					}
 				printf("\n");
-				for(a=0;a<m;a++){for(b=0;b<n;b++){printf(" %8.4f",matrix[a][b]);}printf("\n");}
-				printf("\n");
-				}else{
-					//printf("pivot(i,j)=(%d,%d)\n",i,j);
 				}
 
 			//hiku line
 				for(k=0;k<m;k++){
 					if(k!=pivoti){
-						decval=matrix[k][pivotj];
-						//printf("decval=%f\npivoti=%d\n",decval,pivoti);
-						printf("line declice\nline(%d)=line(%d)*(%8.4f)*(-1)+line(%d)\n",k,pivoti,decval,k);
+						decvalover=overmat[k][pivotj]*-1;
+						decvalunder=undermat[k][pivotj];
+						//printf("decval=%f\npivoti=%d\n",decvalover,pivoti);
+						printf("line declice\nline(%d)=line(%d)*(%d/%d)*(-1)+line(%d)\n\n",k+1,pivoti+1,decvalover,decvalunder,k+1);
 						for(l=0;l<n;l++){
-							matrix[k][l] -= matrix[pivoti][l]*decval;
-/*
-							//print matrix
-							printf("\n");
-							for(a=0;a<m;a++){for(b=0;b<n;b++){printf(" %8.4f",matrix[a][b]);}printf("\n");}
-							printf("\n");
-*/
+							overswap=overmat[k][l];
+							underswap=undermat[k][l];
+							overmat[k][l] = overmat[pivoti][l]*decvalover*underswap+undermat[pivoti][l]*decvalunder*overswap;
+							undermat[k][l] = undermat[pivoti][l]*decvalunder*underswap;
+
+							if(overmat[k][l]==0){
+								undermat[k][l]=1;
+							}else{
+								gcmnum=gcm(overmat[k][l],undermat[k][l]);
+								overmat[k][l] /= gcmnum;
+								undermat[k][l] /= gcmnum;
+							}
+							if(overmat[k][l]==undermat[k][l]){
+								overmat[k][l]=1;
+								undermat[k][l]=1;
+							}
+							if(undermat[k][l]<0){
+								overmat[k][l]*= -1;
+								undermat[k][l] *= -1;
+							}
+
 						}
 					}
 				}
 
 			//print matrix
 				//printf("\n");
-				for(a=0;a<m;a++){for(b=0;b<n;b++){printf(" %8.4f",matrix[a][b]);}printf("\n");}
+				for(a=0;a<m;a++){
+					for(b=0;b<n;b++){
+						printf(" %4d",overmat[a][b]);
+						if(undermat[a][b]!=1){
+							printf("/%4d",undermat[a][b]);
+						}else{
+							printf("     ");
+						}
+					}
+					printf("\n");
+				}
 				printf("\n");
-                
 			}
 		}
 	}
 
-	printf("solve start!\n******************************************\nsolve finish!\n");
+	printf("\n******************************************\nsolve finish!\n");
     
-    //print matrix
-	printf("\nsolved matrix\n");
-	for(i=0;i<m;i++){for(j=0;j<n;j++){printf(" %8.4f",matrix[i][j]);}printf("\n");}
-    
+	//print matrix
+	printf("\nsolved matrix\n%d * %d matrix\n\n",m,n);
+	for(i=0;i<m;i++){
+		//printf(" i:%3d  :",i+1);
+		for(j=0;j<n;j++){
+			printf(" %4d",overmat[i][j]);
+			if(undermat[i][j]!=1){
+				printf("/%4d |",undermat[i][j]);
+			}else{
+				printf("      |");
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
+
