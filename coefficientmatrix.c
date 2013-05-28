@@ -66,7 +66,7 @@ int main(void){
 	//search pivot
 	for(j=0;j<n-anslengs;j++){
 		for(i=0;i<m;i++){
-			printf("hello\n");
+			//printf("hello\n");
 			if(overmat[i][j]!=0.0 && i>pivoti && j>pivotj){
 				//pivot=(i,j)
 			//pivottanise
